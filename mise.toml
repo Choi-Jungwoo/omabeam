@@ -1,0 +1,20 @@
+[tools]
+rust = "latest"
+
+[tasks.build]
+run = "cargo build --release"
+
+[tasks.check]
+run = "cargo check"
+
+[tasks.format]
+run = "cargo fmt -- --check"
+
+[tasks.fmt]
+run = "cargo fmt"
+
+[tasks.lint]
+run = "cargo clippy --all-targets -- -D warnings"
+
+[tasks.test]
+run = "cargo test"
