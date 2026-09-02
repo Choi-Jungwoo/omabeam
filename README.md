@@ -2,16 +2,24 @@
 
 **No app. No account. No cloud. Scan and go.**
 
+![OmaBeam sharing text through a terminal QR code](assets/omabeam-preview.png)
+
 OmaBeam is a lightweight CLI for Omarchy that beams clipboard text, images, or
 copied files from your computer to a phone on the same local network using a QR
 code.
 
 ## Install
 
-Install OmaBeam through `mise`, included with Omarchy:
+Install and configure OmaBeam on Omarchy:
 
 ```sh
-mise use --global cargo:omabeam
+curl -fsSL https://raw.githubusercontent.com/Choi-Jungwoo/omabeam/master/install.sh | bash
+```
+
+Or run the two steps manually with Omarchy's `mise`:
+
+```sh
+mise use --global --minimum-release-age 0s cargo:omabeam
 omabeam setup
 ```
 

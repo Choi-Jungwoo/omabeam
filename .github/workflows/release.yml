@@ -25,6 +25,7 @@ jobs:
             exit 1
           fi
       - run: mise run format
+      - run: mise run check-installer
       - run: mise run lint
       - run: mise run test
       - run: mise run build

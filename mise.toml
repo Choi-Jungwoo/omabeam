@@ -7,6 +7,9 @@ run = "cargo build --release"
 [tasks.check]
 run = "cargo check"
 
+[tasks.check-installer]
+run = "bash -n install.sh"
+
 [tasks.format]
 run = "cargo fmt -- --check"
 
