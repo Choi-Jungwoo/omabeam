@@ -9,9 +9,7 @@ use std::thread;
 
 use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
 
-use super::{qr, terminal, ui};
-
-const PORT: u16 = 61_234;
+use super::{PORT, qr, terminal, ui};
 
 enum Payload {
     File(File),

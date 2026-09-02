@@ -8,6 +8,8 @@ mod ui;
 
 use std::path::PathBuf;
 
+pub(crate) const PORT: u16 = 61_234;
+
 pub(super) fn run(file: Option<PathBuf>) -> Result<(), String> {
     match file {
         Some(path) => file::serve(&path),

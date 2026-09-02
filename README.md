@@ -12,11 +12,16 @@ Install OmaBeam through `mise`, included with Omarchy:
 
 ```sh
 mise use --global cargo:omabeam
+omabeam setup
 ```
 
 OmaBeam uses `wl-paste` from `wl-clipboard` for the Wayland clipboard and `ip`
 from `iproute2` to find the local network address. Both are included with
 Omarchy.
+
+`omabeam setup` adds OmaBeam to the Omarchy Share menu, binds `Super+B`, and
+allows TCP port `61234` through UFW only for the active LAN. Run it again after
+updating OmaBeam to refresh the managed menu and shortcut entries.
 
 ## Usage
 
@@ -43,17 +48,6 @@ clipboard text, clipboard images, copied files, and explicit file arguments use
 a temporary local server that runs until you press any key in an interactive
 terminal. Formats that the phone browser supports are shown inline; other files
 are downloaded.
-
-## Firewall
-
-File sharing uses TCP port `61234`. If a firewall blocks the connection, allow
-that port only from your trusted LAN. Replace these example network values:
-
-```sh
-interface=wlp0s20f3
-subnet=192.168.1.0/24
-sudo ufw allow in on "$interface" from "$subnet" to any port 61234 proto tcp
-```
 
 ## Privacy
 

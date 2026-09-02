@@ -1,6 +1,7 @@
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::process::{Child, Command, Output, Stdio};
 
 struct ChildGuard(Child);
@@ -32,12 +33,7 @@ fn run_with_clipboard_script(name: &str, script: &str) -> Output {
     let test_dir = std::env::temp_dir().join(format!("omabeam-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&test_dir).expect("create test directory");
     let wl_paste = test_dir.join("wl-paste");
-    std::fs::write(&wl_paste, script).expect("write fake wl-paste");
-    let mut permissions = std::fs::metadata(&wl_paste)
-        .expect("read fake wl-paste metadata")
-        .permissions();
-    permissions.set_mode(0o755);
-    std::fs::set_permissions(&wl_paste, permissions).expect("make fake wl-paste executable");
+    write_executable(&wl_paste, script);
 
     let path = format!(
         "{}:{}",
@@ -52,6 +48,15 @@ fn run_with_clipboard_script(name: &str, script: &str) -> Output {
         .expect("run omabeam in a terminal");
     std::fs::remove_dir_all(test_dir).expect("remove test directory");
     output
+}
+
+fn write_executable(path: &Path, contents: &str) {
+    std::fs::write(path, contents).expect("write fake executable");
+    let mut permissions = std::fs::metadata(path)
+        .expect("read fake executable metadata")
+        .permissions();
+    permissions.set_mode(0o755);
+    std::fs::set_permissions(path, permissions).expect("make fake executable executable");
 }
 
 #[test]
@@ -112,6 +117,76 @@ fn empty_piped_input_error_says_how_to_recover() {
         stderr.contains("pipe text into omabeam"),
         "stderr: {stderr:?}"
     );
+}
+
+#[test]
+fn setup_configures_and_reuses_the_omarchy_integration() {
+    let test_dir = std::env::temp_dir().join(format!("omabeam-setup-{}", std::process::id()));
+    let home = test_dir.join("home");
+    let bin = test_dir.join("bin");
+    std::fs::create_dir_all(&home).expect("create fake home");
+    std::fs::create_dir_all(&bin).expect("create fake bin");
+
+    write_executable(&bin.join("omarchy"), "#!/bin/sh\nexit 0\n");
+    write_executable(
+        &bin.join("ip"),
+        "#!/bin/sh\ncase \"$*\" in\n  '-4 route show default') echo 'default via 192.168.50.1 dev test0 src 192.168.50.8' ;;\n  '-4 route show dev test0 scope link') echo '192.168.50.0/24 dev test0 scope link src 192.168.50.8' ;;\n  *) exit 1 ;;\nesac\n",
+    );
+    write_executable(
+        &bin.join("sudo"),
+        "#!/bin/sh\nprintf '%s\n' \"$*\" > \"$HOME/sudo-args\"\n",
+    );
+    write_executable(
+        &bin.join("hyprctl"),
+        "#!/bin/sh\nprintf '%s\n' \"$1\" >> \"$HOME/hyprctl-args\"\n",
+    );
+
+    let path = format!(
+        "{}:{}",
+        bin.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let run_setup = || {
+        Command::new(env!("CARGO_BIN_EXE_omabeam"))
+            .arg("setup")
+            .env("HOME", &home)
+            .env("PATH", &path)
+            .output()
+            .expect("run setup")
+    };
+
+    let first = run_setup();
+    assert!(
+        first.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&first.stderr)
+    );
+    let menu = std::fs::read_to_string(home.join(".config/omarchy/extensions/omarchy-menu.jsonc"))
+        .expect("read installed menu");
+    let bindings = std::fs::read_to_string(home.join(".config/hypr/bindings.lua"))
+        .expect("read installed bindings");
+    assert_eq!(menu.matches("trigger.share.omabeam").count(), 1);
+    assert!(menu.contains("// >>> OmaBeam setup >>>"));
+    assert_eq!(bindings.matches("OmaBeam\"").count(), 1);
+    assert!(bindings.contains("hl.unbind(\"SUPER + B\")"));
+    assert_eq!(
+        std::fs::read_to_string(home.join("sudo-args")).expect("read firewall command"),
+        "ufw allow in on test0 from 192.168.50.0/24 to any port 61234 proto tcp comment OmaBeam\n"
+    );
+    assert_eq!(
+        std::fs::read_to_string(home.join("hyprctl-args")).expect("read Hyprland commands"),
+        "reload\nconfigerrors\n"
+    );
+
+    let second = run_setup();
+    assert!(second.status.success());
+    assert!(String::from_utf8_lossy(&second.stdout).contains("up to date"));
+    assert_eq!(
+        std::fs::read_to_string(home.join("hyprctl-args")).expect("reread Hyprland commands"),
+        "reload\nconfigerrors\n"
+    );
+
+    std::fs::remove_dir_all(test_dir).expect("remove setup test directory");
 }
 
 #[test]
