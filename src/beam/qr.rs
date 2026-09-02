@@ -1,11 +1,9 @@
-//! Prints high-contrast terminal QR codes with the required quiet zone.
+//! Renders high-contrast terminal QR codes with the required quiet zone.
 
 use qrcode::QrCode;
 use qrcode::render::unicode::Dense1x2;
 
-const COLORS: &str = "\x1b[38;2;0;0;0;48;2;255;255;255m";
-
-pub(super) fn print(text: &str) -> Result<(), String> {
+pub(super) fn render(text: &str) -> Result<String, String> {
     if text.is_empty() {
         return Err(
             "there is no text to share; pipe text into omabeam or copy some text first".into(),
@@ -21,6 +19,5 @@ pub(super) fn print(text: &str) -> Result<(), String> {
         .module_dimensions(1, 1)
         .build();
 
-    println!("{COLORS}{image}\x1b[0m");
-    Ok(())
+    Ok(image)
 }

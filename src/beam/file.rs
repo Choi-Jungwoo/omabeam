@@ -1,14 +1,14 @@
 //! Serves one open file on one LAN address and one tokenized download route.
 
 use std::fs::{self, File};
-use std::io::{self, Seek, Write};
+use std::io::{self, Seek};
 use std::net::Ipv4Addr;
 use std::path::Path;
 use std::process::Command;
 
 use tiny_http::{Header, Method, Request, Response, Server};
 
-use super::qr;
+use super::{qr, ui};
 
 const PORT: u16 = 61_234;
 
@@ -33,12 +33,8 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
         .first_raw()
         .unwrap_or("application/octet-stream");
 
-    println!("Sharing {} at:", path.display());
-    println!("{url}");
-    qr::print(&url)?;
-    println!("Press Ctrl-C to stop.");
-    io::stdout()
-        .flush()
+    let code = qr::render(&url)?;
+    ui::present_file(path, &url, &code)
         .map_err(|error| format!("could not print the QR code: {error}"))?;
 
     for request in server.incoming_requests() {

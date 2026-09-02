@@ -47,6 +47,7 @@ fn run_with_clipboard_script(name: &str, script: &str) -> Output {
     let output = Command::new("script")
         .args(["-qec", env!("CARGO_BIN_EXE_omabeam"), "/dev/null"])
         .env("PATH", path)
+        .env("NO_COLOR", "1")
         .output()
         .expect("run omabeam in a terminal");
     std::fs::remove_dir_all(test_dir).expect("remove test directory");

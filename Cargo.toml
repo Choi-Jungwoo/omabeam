@@ -13,6 +13,7 @@ exclude = ["/.github", "/.gitignore", "/mise.toml", "/packaging"]
 clap = { version = "4.6.6", features = ["derive"] }
 mime_guess = "2.0.5"
 qrcode = { version = "0.14.1", default-features = false }
+terminal_size = "0.4.4"
 tiny_http = "0.12.0"
 
 [profile.release]
