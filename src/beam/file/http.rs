@@ -9,6 +9,7 @@ pub(super) fn serve_request(
     mut stream: TcpStream,
     file: &mut File,
     filename: &str,
+    route: &str,
 ) -> io::Result<()> {
     stream.set_read_timeout(Some(Duration::from_secs(5)))?;
     let mut reader = BufReader::new((&stream).take(8 * 1024));
@@ -32,7 +33,7 @@ pub(super) fn serve_request(
 
     let mut parts = request_line.split_whitespace();
     match (parts.next(), parts.next(), parts.next(), parts.next()) {
-        (Some("GET"), Some("/download"), Some(_), None) => {
+        (Some("GET"), Some(path), Some(_), None) if path == route => {
             let length = file.metadata()?.len();
             file.rewind()?;
             write!(

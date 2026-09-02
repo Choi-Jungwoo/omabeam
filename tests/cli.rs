@@ -144,6 +144,11 @@ fn file_mode_serves_only_the_selected_file() {
         .expect("URL path");
     let (host, port) = address.split_once(':').expect("server port");
     assert_eq!(host, default_route_source());
+    assert_eq!(port, "61234");
+    assert!(
+        download_path.ends_with("/download") && download_path != "download",
+        "download URL must contain a route token: {url}"
+    );
     assert!(
         TcpStream::connect(("127.0.0.1", port.parse::<u16>().expect("numeric port"))).is_err(),
         "file server must not listen on unrelated interfaces"
@@ -153,6 +158,9 @@ fn file_mode_serves_only_the_selected_file() {
     let (selected_headers, selected_body) = split_response(&selected_response);
     assert!(selected_headers.starts_with(b"HTTP/1.1 200 OK\r\n"));
     assert_eq!(selected_body, b"selected file");
+
+    let missing_token_response = http_get(address, "/download");
+    assert!(missing_token_response.starts_with(b"HTTP/1.1 404 Not Found\r\n"));
 
     let adjacent_response = http_get(address, "/private.txt");
     assert!(adjacent_response.starts_with(b"HTTP/1.1 404 Not Found\r\n"));

@@ -2,13 +2,15 @@
 
 mod http;
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Write};
 use std::net::{Ipv4Addr, TcpListener};
 use std::path::Path;
 use std::process::Command;
 
 use super::qr;
+
+const PORT: u16 = 61_234;
 
 pub(super) fn serve(path: &Path) -> Result<(), String> {
     let mut file =
@@ -22,13 +24,10 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
     }
 
     let address = local_ipv4()?;
-    let listener = TcpListener::bind((address, 0))
-        .map_err(|error| format!("could not start the file server: {error}"))?;
-    let port = listener
-        .local_addr()
-        .map_err(|error| format!("could not read the file server address: {error}"))?
-        .port();
-    let url = format!("http://{address}:{port}/download");
+    let listener = TcpListener::bind((address, PORT))
+        .map_err(|error| format!("could not start the file server on port {PORT}: {error}"))?;
+    let route = format!("/{}/download", route_token()?);
+    let url = format!("http://{address}:{PORT}{route}");
     let filename = safe_filename(path);
 
     println!("Sharing {} at:", path.display());
@@ -41,12 +40,28 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
 
     for connection in listener.incoming() {
         let stream = connection.map_err(|error| format!("file server failed: {error}"))?;
-        if let Err(error) = http::serve_request(stream, &mut file, &filename) {
+        if let Err(error) = http::serve_request(stream, &mut file, &filename, &route) {
             eprintln!("omabeam: could not serve request: {error}");
         }
     }
 
     Ok(())
+}
+
+fn route_token() -> Result<String, String> {
+    let token = fs::read_to_string("/proc/sys/kernel/random/uuid")
+        .map_err(|error| format!("could not generate a download token: {error}"))?;
+    let token = token.trim();
+
+    if token.is_empty()
+        || !token
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() || byte == b'-')
+    {
+        return Err("the kernel returned an invalid download token".into());
+    }
+
+    Ok(token.to_owned())
 }
 
 fn local_ipv4() -> Result<Ipv4Addr, String> {
