@@ -8,7 +8,7 @@ use clap::Parser;
 #[derive(Parser)]
 #[command(
     version,
-    about = "Beam text, clipboard images, or one file to your phone via QR code"
+    about = "Beam clipboard content or one file to your phone via QR code"
 )]
 struct Cli {
     #[arg(value_name = "FILE")]

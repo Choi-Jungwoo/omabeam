@@ -97,7 +97,7 @@ fn empty_clipboard_error_says_how_to_recover() {
 
     assert!(!output.status.success());
     assert!(
-        terminal_output.contains("copy some text or an image first"),
+        terminal_output.contains("copy some text, an image, or a file first"),
         "terminal output: {terminal_output:?}"
     );
 }

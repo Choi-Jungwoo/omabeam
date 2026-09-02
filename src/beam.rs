@@ -26,6 +26,7 @@ pub(super) fn run(file: Option<PathBuf>) -> Result<(), String> {
                 bytes,
                 content_type,
             } => file::serve_image(bytes, content_type),
+            input::Content::File(path) => file::serve(&path),
         },
     }
 }

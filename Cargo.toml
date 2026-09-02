@@ -2,7 +2,7 @@
 name = "omabeam"
 version = "0.1.0"
 edition = "2024"
-description = "Beam text, clipboard images, or one file to a phone with a QR code"
+description = "Beam clipboard content or one file to a phone with a QR code"
 license = "MIT"
 repository = "https://github.com/Choi-Jungwoo/omabeam"
 keywords = ["qr-code", "file-sharing", "local-network", "wayland", "omarchy"]
