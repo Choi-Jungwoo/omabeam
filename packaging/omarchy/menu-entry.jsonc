@@ -1,0 +1,9 @@
+{
+  "trigger.share.omabeam": {
+    "icon": "󰐲",
+    "label": "OmaBeam",
+    "description": "Beam clipboard via QR code",
+    "when": "omarchy-cmd-present omabeam",
+    "action": "omarchy-launch-floating-terminal-with-presentation omabeam"
+  }
+}
