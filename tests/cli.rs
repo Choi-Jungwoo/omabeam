@@ -167,6 +167,10 @@ fn setup_configures_and_reuses_the_omarchy_integration() {
         .expect("read installed bindings");
     assert_eq!(menu.matches("trigger.share.omabeam").count(), 1);
     assert!(menu.contains("// >>> OmaBeam setup >>>"));
+    assert!(
+        menu.lines()
+            .any(|line| line == "  // <<< OmaBeam setup <<<")
+    );
     assert_eq!(bindings.matches("OmaBeam\"").count(), 1);
     assert!(bindings.contains("hl.unbind(\"SUPER + B\")"));
     assert_eq!(

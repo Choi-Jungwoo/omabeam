@@ -238,7 +238,7 @@ fn updated_keybindings(contents: &str) -> Result<String, String> {
 }
 
 fn updated_menu(contents: &str) -> Result<String, String> {
-    let block = format!("{MENU_BEGIN}\n{}{MENU_END}\n", menu_member());
+    let block = format!("{MENU_BEGIN}\n{}\n{MENU_END}\n", menu_member());
     if let Some(updated) = replace_managed_block(contents, MENU_BEGIN, MENU_END, &block)? {
         return Ok(updated);
     }
