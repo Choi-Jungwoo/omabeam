@@ -1,19 +1,19 @@
-//! Serves one open file on one LAN address and one fixed download path.
-
-mod http;
+//! Serves one open file on one LAN address and one tokenized download route.
 
 use std::fs::{self, File};
-use std::io::{self, Write};
-use std::net::{Ipv4Addr, TcpListener};
+use std::io::{self, Seek, Write};
+use std::net::Ipv4Addr;
 use std::path::Path;
 use std::process::Command;
+
+use tiny_http::{Header, Method, Request, Response, Server};
 
 use super::qr;
 
 const PORT: u16 = 61_234;
 
 pub(super) fn serve(path: &Path) -> Result<(), String> {
-    let mut file =
+    let file =
         File::open(path).map_err(|error| format!("could not open {}: {error}", path.display()))?;
     if !file
         .metadata()
@@ -24,7 +24,7 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
     }
 
     let address = local_ipv4()?;
-    let listener = TcpListener::bind((address, PORT))
+    let server = Server::http((address, PORT))
         .map_err(|error| format!("could not start the file server on port {PORT}: {error}"))?;
     let route = format!("/{}/download", route_token()?);
     let url = format!("http://{address}:{PORT}{route}");
@@ -38,14 +38,40 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
         .flush()
         .map_err(|error| format!("could not print the QR code: {error}"))?;
 
-    for connection in listener.incoming() {
-        let stream = connection.map_err(|error| format!("file server failed: {error}"))?;
-        if let Err(error) = http::serve_request(stream, &mut file, &filename, &route) {
+    for request in server.incoming_requests() {
+        if let Err(error) = serve_request(request, &file, &filename, &route) {
             eprintln!("omabeam: could not serve request: {error}");
         }
     }
 
     Ok(())
+}
+
+fn serve_request(request: Request, file: &File, filename: &str, route: &str) -> io::Result<()> {
+    if request.method() != &Method::Get {
+        let allow = Header::from_bytes("Allow", "GET").expect("static header is valid");
+        return request.respond(Response::empty(405).with_header(allow));
+    }
+
+    if request.url() != route {
+        return request.respond(Response::empty(404));
+    }
+
+    let mut download = file.try_clone()?;
+    download.rewind()?;
+    let content_type = Header::from_bytes("Content-Type", "application/octet-stream")
+        .expect("static header is valid");
+    let disposition = Header::from_bytes(
+        "Content-Disposition",
+        format!("attachment; filename=\"{filename}\""),
+    )
+    .expect("safe filename makes a valid header");
+
+    request.respond(
+        Response::from_file(download)
+            .with_header(content_type)
+            .with_header(disposition),
+    )
 }
 
 fn route_token() -> Result<String, String> {
