@@ -156,7 +156,13 @@ fn file_mode_serves_only_the_selected_file() {
 
     let selected_response = http_get(address, &format!("/{download_path}"));
     let (selected_headers, selected_body) = split_response(&selected_response);
-    assert!(selected_headers.starts_with(b"HTTP/1.1 200 OK\r\n"));
+    let selected_headers =
+        std::str::from_utf8(selected_headers).expect("response headers are UTF-8");
+    assert!(selected_headers.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(selected_headers.contains("\r\nContent-Type: image/jpeg\r\n"));
+    assert!(
+        selected_headers.contains("\r\nContent-Disposition: inline; filename=\"photo.jpg\"\r\n")
+    );
     assert_eq!(selected_body, b"selected file");
 
     let missing_token_response = http_get(address, "/download");

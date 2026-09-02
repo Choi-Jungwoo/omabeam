@@ -29,6 +29,9 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
     let route = format!("/{}/download", route_token()?);
     let url = format!("http://{address}:{PORT}{route}");
     let filename = safe_filename(path);
+    let content_type = mime_guess::from_path(path)
+        .first_raw()
+        .unwrap_or("application/octet-stream");
 
     println!("Sharing {} at:", path.display());
     println!("{url}");
@@ -39,7 +42,7 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
         .map_err(|error| format!("could not print the QR code: {error}"))?;
 
     for request in server.incoming_requests() {
-        if let Err(error) = serve_request(request, &file, &filename, &route) {
+        if let Err(error) = serve_request(request, &file, &filename, content_type, &route) {
             eprintln!("omabeam: could not serve request: {error}");
         }
     }
@@ -47,7 +50,13 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn serve_request(request: Request, file: &File, filename: &str, route: &str) -> io::Result<()> {
+fn serve_request(
+    request: Request,
+    file: &File,
+    filename: &str,
+    content_type: &str,
+    route: &str,
+) -> io::Result<()> {
     if request.method() != &Method::Get {
         let allow = Header::from_bytes("Allow", "GET").expect("static header is valid");
         return request.respond(Response::empty(405).with_header(allow));
@@ -59,11 +68,11 @@ fn serve_request(request: Request, file: &File, filename: &str, route: &str) -> 
 
     let mut download = file.try_clone()?;
     download.rewind()?;
-    let content_type = Header::from_bytes("Content-Type", "application/octet-stream")
-        .expect("static header is valid");
+    let content_type =
+        Header::from_bytes("Content-Type", content_type).expect("MIME type is a valid header");
     let disposition = Header::from_bytes(
         "Content-Disposition",
-        format!("attachment; filename=\"{filename}\""),
+        format!("inline; filename=\"{filename}\""),
     )
     .expect("safe filename makes a valid header");
 
