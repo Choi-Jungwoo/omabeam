@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/Choi-Jungwoo/omabeam"
 keywords = ["qr-code", "file-sharing", "local-network", "wayland", "omarchy"]
 categories = ["command-line-utilities"]
-exclude = ["/.gitignore", "/mise.toml", "/packaging"]
+exclude = ["/.github", "/.gitignore", "/mise.toml", "/packaging"]
 
 [dependencies]
 clap = { version = "4.6.6", features = ["derive"] }
