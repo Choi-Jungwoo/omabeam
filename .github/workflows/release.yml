@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - run: rustup component add rustfmt clippy
       - name: Verify tag matches crate version
         run: |
           package_id=$(cargo pkgid --package omabeam)
