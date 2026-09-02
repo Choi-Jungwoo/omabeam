@@ -13,7 +13,28 @@ pub(super) fn run(file: Option<PathBuf>) -> Result<(), String> {
         Some(path) => file::serve(&path),
         None => match input::read()? {
             input::Content::Text(text) => {
-                let code = qr::render(&text)?;
+                if text.is_empty() {
+                    return Err(
+                        "there is no text to share; pipe text into omabeam or copy some text first"
+                            .into(),
+                    );
+                }
+                let code = match qr::render(&text) {
+                    Ok(code) => code,
+                    Err(qr::QrError::DataTooLong) if terminal::is_interactive() => {
+                        return file::serve_text(text);
+                    }
+                    Err(qr::QrError::DataTooLong) => {
+                        return Err(
+                            "text is too long for a QR code; shorten it or share a file instead"
+                                .into(),
+                        );
+                    }
+                    Err(error) => return Err(format!("could not encode the QR code: {error}")),
+                };
+                if terminal::is_interactive() && ui::presentation_overflows(&code) {
+                    return file::serve_text(text);
+                }
                 ui::present_text(&text, &code)
                     .map_err(|error| format!("could not print the QR code: {error}"))?;
                 if terminal::is_interactive() {

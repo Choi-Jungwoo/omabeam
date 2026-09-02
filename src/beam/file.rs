@@ -1,4 +1,4 @@
-//! Serves one file or clipboard image on one LAN address and tokenized route.
+//! Serves one file or clipboard payload on one LAN address and tokenized route.
 
 use std::fs::{self, File};
 use std::io::{self, Cursor, Seek};
@@ -53,6 +53,16 @@ pub(super) fn serve_image(bytes: Vec<u8>, content_type: String) -> Result<(), St
     )
 }
 
+pub(super) fn serve_text(text: String) -> Result<(), String> {
+    let byte_count = text.len();
+    serve_payload(
+        Payload::Bytes(text.into_bytes()),
+        "clipboard.txt".into(),
+        "text/plain; charset=utf-8".into(),
+        |_, url, code| ui::present_text_link(byte_count, url, code),
+    )
+}
+
 fn serve_payload(
     payload: Payload,
     filename: String,
@@ -64,7 +74,8 @@ fn serve_payload(
         .map_err(|error| format!("could not start the file server on port {PORT}: {error}"))?;
     let route = format!("/{}/download", route_token()?);
     let url = format!("http://{address}:{PORT}{route}");
-    let code = qr::render(&url)?;
+    let code = qr::render(&url)
+        .map_err(|error| format!("could not encode the download QR code: {error}"))?;
     present(&filename, &url, &code)
         .map_err(|error| format!("could not print the QR code: {error}"))?;
 

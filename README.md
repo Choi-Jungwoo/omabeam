@@ -38,10 +38,11 @@ Share one file:
 omabeam photo.jpg
 ```
 
-Text and URLs are encoded directly in the terminal QR code. Clipboard images,
-copied files, and explicit file arguments use a temporary local server that
-runs until you press any key in an interactive terminal. Formats that the phone
-browser supports are shown inline; other files are downloaded.
+Text and URLs that fit are encoded directly in the terminal QR code. Longer
+clipboard text, clipboard images, copied files, and explicit file arguments use
+a temporary local server that runs until you press any key in an interactive
+terminal. Formats that the phone browser supports are shown inline; other files
+are downloaded.
 
 ## Firewall
 

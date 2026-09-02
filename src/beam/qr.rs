@@ -2,17 +2,10 @@
 
 use qrcode::QrCode;
 use qrcode::render::unicode::Dense1x2;
+pub(super) use qrcode::types::QrError;
 
-pub(super) fn render(text: &str) -> Result<String, String> {
-    if text.is_empty() {
-        return Err(
-            "there is no text to share; pipe text into omabeam or copy some text first".into(),
-        );
-    }
-
-    let code = QrCode::new(text.as_bytes()).map_err(|_| {
-        "text is too long for a QR code; shorten it or share a file instead".to_owned()
-    })?;
+pub(super) fn render(text: &str) -> Result<String, QrError> {
+    let code = QrCode::new(text.as_bytes())?;
     let image = code
         .render::<Dense1x2>()
         .quiet_zone(true)

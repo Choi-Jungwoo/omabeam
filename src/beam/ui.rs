@@ -54,6 +54,20 @@ pub(super) fn present_text(text: &str, code: &str) -> io::Result<()> {
     )
 }
 
+pub(super) fn present_text_link(byte_count: usize, url: &str, code: &str) -> io::Result<()> {
+    let Some(dimensions) = presentation_dimensions(code) else {
+        return print_named_plain("clipboard.txt", url, code);
+    };
+
+    present_interactive(
+        &format!("TEXT BEAM // {byte_count} BYTES"),
+        stop_note(),
+        "TEXT",
+        code,
+        dimensions,
+    )
+}
+
 pub(super) fn present_file(path: &Path, url: &str, code: &str) -> io::Result<()> {
     let Some(dimensions) = presentation_dimensions(code) else {
         return print_file_plain(path, url, code);
@@ -71,7 +85,7 @@ pub(super) fn present_file(path: &Path, url: &str, code: &str) -> io::Result<()>
 
 pub(super) fn present_image(filename: &str, url: &str, code: &str) -> io::Result<()> {
     let Some(dimensions) = presentation_dimensions(code) else {
-        return print_image_plain(filename, url, code);
+        return print_named_plain(filename, url, code);
     };
 
     present_interactive(
@@ -125,10 +139,18 @@ fn presentation_dimensions(code: &str) -> Option<(usize, usize)> {
         return None;
     }
 
-    let (columns, rows) = terminal_dimensions()?;
+    let dimensions = terminal_dimensions()?;
+    presentation_fits_in(code, dimensions).then_some(dimensions)
+}
+
+pub(super) fn presentation_overflows(code: &str) -> bool {
+    terminal_dimensions().is_some_and(|dimensions| !presentation_fits_in(code, dimensions))
+}
+
+fn presentation_fits_in(code: &str, (columns, rows): (usize, usize)) -> bool {
     let required_columns = code_width(code).max(MIN_FRAME_WIDTH) + 2;
     let required_rows = HEADER_HEIGHT + code.lines().count() + 5;
-    (columns >= required_columns && rows >= required_rows).then_some((columns, rows))
+    columns >= required_columns && rows >= required_rows
 }
 
 fn terminal_dimensions() -> Option<(usize, usize)> {
@@ -150,7 +172,7 @@ fn print_file_plain(path: &Path, url: &str, code: &str) -> io::Result<()> {
     stdout.flush()
 }
 
-fn print_image_plain(filename: &str, url: &str, code: &str) -> io::Result<()> {
+fn print_named_plain(filename: &str, url: &str, code: &str) -> io::Result<()> {
     let mut stdout = io::stdout().lock();
     writeln!(stdout, "Sharing {filename} at:")?;
     writeln!(stdout, "{url}")?;
