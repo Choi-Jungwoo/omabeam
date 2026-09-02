@@ -1,1 +1,1 @@
-o.bind("SUPER + B", "OmaBeam", "omarchy-launch-floating-terminal-with-presentation 'tput civis; trap \"tput cnorm\" EXIT; omabeam; status=$?; if (( status != 130 )); then while read -rsn 1 -t 0.1 _ </dev/tty; do :; done; read -rsn 1 </dev/tty; fi; exit 130'")
+o.bind("SUPER + B", "OmaBeam", "omarchy-launch-floating-terminal-with-presentation 'tput civis; trap \"tput cnorm\" EXIT; omabeam; status=$?; if (( status != 0 && status != 130 )); then while read -rsn 1 -t 0.1 _ </dev/tty; do :; done; read -rsn 1 </dev/tty; fi; exit 130'")

@@ -2,8 +2,9 @@
 
 **No app. No account. No cloud. Scan and go.**
 
-OmaBeam is a lightweight CLI for Omarchy that beams text, links, or one file
-from your computer to a phone on the same local network using a QR code.
+OmaBeam is a lightweight CLI for Omarchy that beams text, clipboard images, or
+one file from your computer to a phone on the same local network using a QR
+code.
 
 ## Install
 
@@ -19,7 +20,7 @@ Omarchy.
 
 ## Usage
 
-Share the current clipboard:
+Share the current clipboard text or image:
 
 ```sh
 omabeam
@@ -37,9 +38,10 @@ Share one file:
 omabeam photo.jpg
 ```
 
-Text and URLs are encoded directly in the terminal QR code. File sharing runs
-in the foreground until you press <kbd>Ctrl</kbd>+<kbd>C</kbd>. Formats that the
-phone browser supports are shown inline; other files are downloaded.
+Text and URLs are encoded directly in the terminal QR code. Clipboard images
+and files use a temporary local server that runs until you press any key in an
+interactive terminal. Formats that the phone browser supports are shown inline;
+other files are downloaded.
 
 ## Firewall
 
@@ -55,8 +57,8 @@ sudo ufw allow in on "$interface" from "$subnet" to any port 61234 proto tcp
 ## Privacy
 
 OmaBeam uploads nothing. The temporary server binds only to the current LAN
-address, exposes only the selected regular file, and protects its URL with a
-new random route token each time it runs.
+address, exposes only the selected regular file or clipboard image, and
+protects its URL with a new random route token each time it runs.
 
 ## License
 

@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use terminal_size::{Height, Width, terminal_size};
 
+use super::terminal;
+
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
 const DIM: &str = "\x1b[2m";
@@ -60,8 +62,22 @@ pub(super) fn present_file(path: &Path, url: &str, code: &str) -> io::Result<()>
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     present_interactive(
         &format!("FILE BEAM // {filename}"),
-        "CTRL+C // CLOSES THE LINK",
+        stop_note(),
         "FILE",
+        code,
+        dimensions,
+    )
+}
+
+pub(super) fn present_image(filename: &str, url: &str, code: &str) -> io::Result<()> {
+    let Some(dimensions) = presentation_dimensions(code) else {
+        return print_image_plain(filename, url, code);
+    };
+
+    present_interactive(
+        &format!("IMAGE BEAM // {filename}"),
+        stop_note(),
+        "IMAGE",
         code,
         dimensions,
     )
@@ -130,8 +146,33 @@ fn print_file_plain(path: &Path, url: &str, code: &str) -> io::Result<()> {
     writeln!(stdout, "Sharing {} at:", path.display())?;
     writeln!(stdout, "{url}")?;
     writeln!(stdout, "{PLAIN_QR}{code}{RESET}")?;
-    writeln!(stdout, "Press Ctrl-C to stop.")?;
+    writeln!(stdout, "{}", stop_instruction())?;
     stdout.flush()
+}
+
+fn print_image_plain(filename: &str, url: &str, code: &str) -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    writeln!(stdout, "Sharing {filename} at:")?;
+    writeln!(stdout, "{url}")?;
+    writeln!(stdout, "{PLAIN_QR}{code}{RESET}")?;
+    writeln!(stdout, "{}", stop_instruction())?;
+    stdout.flush()
+}
+
+fn stop_instruction() -> &'static str {
+    if terminal::is_interactive() {
+        "Press any key to stop."
+    } else {
+        "Press Ctrl-C to stop."
+    }
+}
+
+fn stop_note() -> &'static str {
+    if terminal::is_interactive() {
+        "ANY KEY // CLOSES THE LINK"
+    } else {
+        "CTRL+C // CLOSES THE LINK"
+    }
 }
 
 fn animate_beam(

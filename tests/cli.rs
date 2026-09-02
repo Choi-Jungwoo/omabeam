@@ -83,7 +83,9 @@ fn terminal_stdin_reads_the_wayland_clipboard() {
     assert_eq!(
         String::from_utf8(clipboard_output.stdout)
             .expect("terminal stdout is UTF-8")
-            .replace('\r', ""),
+            .replace('\r', "")
+            .replace("\x1b[?25l", "")
+            .replace("\x1b[?25h", ""),
         String::from_utf8(piped_output.stdout).expect("piped stdout is UTF-8")
     );
 }
@@ -95,7 +97,7 @@ fn empty_clipboard_error_says_how_to_recover() {
 
     assert!(!output.status.success());
     assert!(
-        terminal_output.contains("copy some text first"),
+        terminal_output.contains("copy some text or an image first"),
         "terminal output: {terminal_output:?}"
     );
 }

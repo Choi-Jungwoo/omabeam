@@ -1,16 +1,22 @@
-//! Serves one open file on one LAN address and one tokenized download route.
+//! Serves one file or clipboard image on one LAN address and tokenized route.
 
 use std::fs::{self, File};
-use std::io::{self, Seek};
+use std::io::{self, Cursor, Seek};
 use std::net::Ipv4Addr;
 use std::path::Path;
 use std::process::Command;
+use std::thread;
 
-use tiny_http::{Header, Method, Request, Response, Server};
+use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
 
-use super::{qr, ui};
+use super::{qr, terminal, ui};
 
 const PORT: u16 = 61_234;
+
+enum Payload {
+    File(File),
+    Bytes(Vec<u8>),
+}
 
 pub(super) fn serve(path: &Path) -> Result<(), String> {
     let file =
@@ -23,32 +29,75 @@ pub(super) fn serve(path: &Path) -> Result<(), String> {
         return Err(format!("{} is not a regular file", path.display()));
     }
 
+    let filename = safe_filename(path);
+    let content_type = mime_guess::from_path(path)
+        .first_raw()
+        .unwrap_or("application/octet-stream")
+        .to_owned();
+
+    serve_payload(
+        Payload::File(file),
+        filename,
+        content_type,
+        |_, url, code| ui::present_file(path, url, code),
+    )
+}
+
+pub(super) fn serve_image(bytes: Vec<u8>, content_type: String) -> Result<(), String> {
+    let filename = clipboard_image_filename(&content_type);
+    serve_payload(
+        Payload::Bytes(bytes),
+        filename,
+        content_type,
+        ui::present_image,
+    )
+}
+
+fn serve_payload(
+    payload: Payload,
+    filename: String,
+    content_type: String,
+    present: impl FnOnce(&str, &str, &str) -> io::Result<()>,
+) -> Result<(), String> {
     let address = local_ipv4()?;
     let server = Server::http((address, PORT))
         .map_err(|error| format!("could not start the file server on port {PORT}: {error}"))?;
     let route = format!("/{}/download", route_token()?);
     let url = format!("http://{address}:{PORT}{route}");
-    let filename = safe_filename(path);
-    let content_type = mime_guess::from_path(path)
-        .first_raw()
-        .unwrap_or("application/octet-stream");
-
     let code = qr::render(&url)?;
-    ui::present_file(path, &url, &code)
+    present(&filename, &url, &code)
         .map_err(|error| format!("could not print the QR code: {error}"))?;
 
-    for request in server.incoming_requests() {
-        if let Err(error) = serve_request(request, &file, &filename, content_type, &route) {
-            eprintln!("omabeam: could not serve request: {error}");
-        }
+    if terminal::is_interactive() {
+        thread::Builder::new()
+            .name("omabeam-http".into())
+            .spawn(move || serve_requests(server, payload, filename, content_type, route))
+            .map_err(|error| format!("could not start the HTTP server thread: {error}"))?;
+        terminal::wait_for_key().map_err(|error| format!("could not wait for a key: {error}"))?;
+    } else {
+        serve_requests(server, payload, filename, content_type, route);
     }
 
     Ok(())
 }
 
+fn serve_requests(
+    server: Server,
+    payload: Payload,
+    filename: String,
+    content_type: String,
+    route: String,
+) {
+    for request in server.incoming_requests() {
+        if let Err(error) = serve_request(request, &payload, &filename, &content_type, &route) {
+            eprintln!("omabeam: could not serve request: {error}");
+        }
+    }
+}
+
 fn serve_request(
     request: Request,
-    file: &File,
+    payload: &Payload,
     filename: &str,
     content_type: &str,
     route: &str,
@@ -62,8 +111,6 @@ fn serve_request(
         return request.respond(Response::empty(404));
     }
 
-    let mut download = file.try_clone()?;
-    download.rewind()?;
     let content_type =
         Header::from_bytes("Content-Type", content_type).expect("MIME type is a valid header");
     let disposition = Header::from_bytes(
@@ -72,11 +119,32 @@ fn serve_request(
     )
     .expect("safe filename makes a valid header");
 
-    request.respond(
-        Response::from_file(download)
-            .with_header(content_type)
-            .with_header(disposition),
-    )
+    match payload {
+        Payload::File(file) => {
+            let mut download = file.try_clone()?;
+            download.rewind()?;
+            request.respond(
+                Response::from_file(download)
+                    .with_header(content_type)
+                    .with_header(disposition),
+            )
+        }
+        Payload::Bytes(bytes) => request.respond(Response::new(
+            StatusCode(200),
+            vec![content_type, disposition],
+            Cursor::new(bytes.as_slice()),
+            Some(bytes.len()),
+            None,
+        )),
+    }
+}
+
+fn clipboard_image_filename(content_type: &str) -> String {
+    let extension = mime_guess::get_mime_extensions_str(content_type)
+        .and_then(|extensions| extensions.first())
+        .copied()
+        .unwrap_or("img");
+    format!("clipboard.{extension}")
 }
 
 fn route_token() -> Result<String, String> {

@@ -185,6 +185,7 @@ dependencies = [
  "clap",
  "mime_guess",
  "qrcode",
+ "rustix",
  "terminal_size",
  "tiny_http",
 ]
