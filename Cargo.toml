@@ -2,6 +2,9 @@
 name = "omabeam"
 version = "0.1.0"
 edition = "2024"
+description = "Beam text, links, or one file to a phone with a QR code"
+license = "MIT"
+repository = "https://github.com/Choi-Jungwoo/omabeam"
 
 [dependencies]
 clap = { version = "4.6.6", features = ["derive"] }
