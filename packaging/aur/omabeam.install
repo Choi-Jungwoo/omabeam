@@ -1,0 +1,8 @@
+post_install() {
+  printf '%s\n' \
+    'To enable the OmaBeam Share entry and Super+B binding:' \
+    '  Merge /usr/share/omabeam/omarchy/menu-entry.jsonc into ~/.config/omarchy/extensions/omarchy-menu.jsonc' \
+    '  Append /usr/share/omabeam/omarchy/keybinding.lua to ~/.config/hypr/bindings.lua' \
+    'Then run:' \
+    '  omarchy menu refresh && hyprctl reload'
+}
