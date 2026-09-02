@@ -7,11 +7,10 @@ from your computer to a phone on the same local network using a QR code.
 
 ## Install
 
-Until the AUR package is available, install the latest source revision with
-Cargo:
+Install OmaBeam through `mise`, included with Omarchy:
 
 ```sh
-cargo install --locked --git https://github.com/Choi-Jungwoo/omabeam
+mise use --global cargo:omabeam
 ```
 
 OmaBeam uses `wl-paste` from `wl-clipboard` for the Wayland clipboard and `ip`
