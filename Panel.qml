@@ -49,7 +49,9 @@ Panel {
     }
 
     onOpenedChanged: {
-        if (opened && service) service.beam("")
+        if (!service) return
+        if (opened) service.beam("")
+        else service.stopServing()
     }
 
     KeyboardPanel {
@@ -96,6 +98,14 @@ Panel {
                         Text {
                             visible: service && service.busy
                             text: "● beaming"
+                            color: root.accent
+                            font.family: root.fontFamily
+                            font.pixelSize: Style.font.caption
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Text {
+                            visible: service && !service.busy && service.serving && service.url
+                            text: "● serving"
                             color: root.accent
                             font.family: root.fontFamily
                             font.pixelSize: Style.font.caption

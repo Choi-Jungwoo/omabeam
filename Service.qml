@@ -33,6 +33,9 @@ Item {
     property string contentType: ""
     property string error: ""
     property bool busy: false
+    // Loading (waiting for beam JSON) vs serving (LAN HTTP alive).
+    // busy clears on first JSON line; serving mirrors beamProc.running.
+    readonly property bool serving: beamProc.running
     property int revision: 0
     property double lastBeamMs: 0
     property string pendingFile: ""
@@ -62,13 +65,10 @@ Item {
         lastBeamMs = Date.now()
     }
 
-
-
-
-
-
     function refresh() { beam("") }
-    function stopServing() { if (beamProc.running) beamProc.running = false }
+    function stopServing() {
+        if (beamProc.running) beamProc.running = false
+    }
 
     function tryFallback(exitCode) {
         if (exitCode === 127 && pluginDir) {
@@ -116,7 +116,9 @@ Item {
         contentType = String(obj.contentType || "")
         error = ""
         revision++
-        if (!beamProc.running) busy = false
+        // Server-backed shares keep beamProc.running (serving) — busy is only
+        // the wait for this first JSON line, so clear it here in all cases.
+        busy = false
     }
 
     Process {
@@ -135,7 +137,11 @@ Item {
         }
         onExited: function(exitCode, exitStatus) {
             if (exitCode === 127 && root.tryFallback(exitCode)) return
-            if (exitCode !== 0 && !root.error) {
+            // Intentional stops (panel close, refresh, Stop button) kill a
+            // successfully-beamed server: busy is already false, so don't
+            // relabel that as a failure. Only a non-zero exit while still
+            // waiting for the first JSON line is a real beam failure.
+            if (exitCode !== 0 && !root.error && root.busy) {
                 root.error = "Beam failed (exit " + exitCode + ")"
                 root.kind = "error"
             }

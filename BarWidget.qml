@@ -55,7 +55,7 @@ BarWidget {
         function beam(): void { if (root.service) root.service.beam("") }
         function status(): void {
             var s = root.service
-            console.log("omabeam status: opened=" + root.opened + " busy=" + (s ? s.busy : "no-service") + " kind=" + (s ? s.kind : "?"))
+            console.log("omabeam status: opened=" + root.opened + " busy=" + (s ? s.busy : "no-service") + " serving=" + (s ? s.serving : "?") + " kind=" + (s ? s.kind : "?"))
         }
     }
 
@@ -64,7 +64,7 @@ BarWidget {
         anchors.fill: parent
         bar: root.bar
         text: root.glyph
-        tooltipText: service && service.busy ? "Beaming…" : "OmaBeam — click to show QR"
+        tooltipText: service && service.busy ? "Beaming…" : (service && service.serving && service.url ? "Serving " + service.url : "OmaBeam — click to show QR")
         onPressed: function(b) {
             if (b === Qt.RightButton) return
             root.togglePanel()
