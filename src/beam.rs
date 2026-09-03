@@ -2,6 +2,7 @@
 
 mod file;
 mod input;
+pub mod panel;
 mod qr;
 mod terminal;
 mod ui;

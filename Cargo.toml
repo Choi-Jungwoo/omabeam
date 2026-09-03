@@ -11,8 +11,9 @@ exclude = ["/.github", "/.gitignore", "/mise.toml"]
 
 [dependencies]
 clap = { version = "4.6.6", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
 mime_guess = "2.0.5"
-qrcode = { version = "0.14.1", default-features = false }
+qrcode = { version = "0.14.1", default-features = false, features = ["image"] }
 rustix = { version = "1.1.4", features = ["termios"] }
 terminal_size = "0.4.4"
 tiny_http = "0.12.0"

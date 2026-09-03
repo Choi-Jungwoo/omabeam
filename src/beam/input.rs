@@ -30,7 +30,7 @@ pub(super) fn read() -> Result<Content, String> {
     }
 }
 
-fn read_clipboard() -> Result<Content, String> {
+pub(super) fn read_clipboard() -> Result<Content, String> {
     let types = read_wl_paste(&["--list-types"])?;
     let types = String::from_utf8(types)
         .map_err(|_| "wl-paste returned invalid clipboard types".to_owned())?;
