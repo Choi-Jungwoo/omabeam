@@ -21,8 +21,8 @@ pub(crate) fn run(file: Option<PathBuf>, qr_file: PathBuf) -> Result<(), String>
     let content = match file {
         Some(path) => {
             // Validate file now to emit JSON error quickly
-            let f = File::open(&path)
-                .map_err(|e| format!("could not open {}: {e}", path.display()))?;
+            let f =
+                File::open(&path).map_err(|e| format!("could not open {}: {e}", path.display()))?;
             if !f
                 .metadata()
                 .map_err(|e| format!("could not inspect {}: {e}", path.display()))?
@@ -56,13 +56,14 @@ pub(crate) fn run(file: Option<PathBuf>, qr_file: PathBuf) -> Result<(), String>
                 }
                 Err(e) => return Err(e),
             }
-        },
+        }
     };
 
     match content {
         input::Content::Text(text) => {
             if text.is_empty() {
-                let msg = "there is no text to share; pipe text into omabeam or copy some text first";
+                let msg =
+                    "there is no text to share; pipe text into omabeam or copy some text first";
                 emit_error(&qr_file, msg);
                 return Err(msg.into());
             }
@@ -72,15 +73,7 @@ pub(crate) fn run(file: Option<PathBuf>, qr_file: PathBuf) -> Result<(), String>
                 Ok(_) => {
                     // Fits: encode text directly
                     qr::render_png(&text, &qr_file)?;
-                    emit_json(
-                        &qr_file,
-                        &text,
-                        "text",
-                        None,
-                        None,
-                        None,
-                        None,
-                    );
+                    emit_json(&qr_file, &text, "text", None, None, None, None);
                     // No server, exit immediately
                     Ok(())
                 }
@@ -95,12 +88,18 @@ pub(crate) fn run(file: Option<PathBuf>, qr_file: PathBuf) -> Result<(), String>
                 }
             }
         }
-        input::Content::Image { bytes, content_type } => {
-            serve_bytes_payload(bytes, clipboard_image_filename(&content_type), content_type, qr_file)
-        }
+        input::Content::Image {
+            bytes,
+            content_type,
+        } => serve_bytes_payload(
+            bytes,
+            clipboard_image_filename(&content_type),
+            content_type,
+            qr_file,
+        ),
         input::Content::File(path) => {
-            let f = File::open(&path)
-                .map_err(|e| format!("could not open {}: {e}", path.display()))?;
+            let f =
+                File::open(&path).map_err(|e| format!("could not open {}: {e}", path.display()))?;
             serve_file_payload(f, path, qr_file)
         }
     }
@@ -173,7 +172,13 @@ fn serve_payload(
     Ok(())
 }
 
-fn serve_requests(server: Server, payload: Payload, filename: String, content_type: String, route: String) {
+fn serve_requests(
+    server: Server,
+    payload: Payload,
+    filename: String,
+    content_type: String,
+    route: String,
+) {
     for request in server.incoming_requests() {
         if let Err(e) = serve_request(request, &payload, &filename, &content_type, &route) {
             eprintln!("omabeam: could not serve request: {e}");
@@ -205,7 +210,11 @@ fn serve_request(
         Payload::File(file) => {
             let mut download = file.try_clone()?;
             download.rewind()?;
-            request.respond(Response::from_file(download).with_header(ct).with_header(disp))
+            request.respond(
+                Response::from_file(download)
+                    .with_header(ct)
+                    .with_header(disp),
+            )
         }
         Payload::Bytes(bytes) => request.respond(Response::new(
             StatusCode(200),
@@ -253,11 +262,7 @@ fn route_token() -> Result<String, String> {
     let token = fs::read_to_string("/proc/sys/kernel/random/uuid")
         .map_err(|e| format!("could not generate a download token: {e}"))?;
     let token = token.trim();
-    if token.is_empty()
-        || !token
-            .bytes()
-            .all(|b| b.is_ascii_hexdigit() || b == b'-')
-    {
+    if token.is_empty() || !token.bytes().all(|b| b.is_ascii_hexdigit() || b == b'-') {
         return Err("the kernel returned an invalid download token".into());
     }
     Ok(token.to_owned())
@@ -328,21 +333,21 @@ fn emit_json(
     json.push_str(&json_escape(detail));
     json.push_str("\",\"qrPng\":\"");
     json.push_str(&json_escape(&qr_str));
-    json.push_str("\"");
+    json.push('"');
     if let Some(u) = url {
         json.push_str(",\"url\":\"");
         json.push_str(&json_escape(u));
-        json.push_str("\"");
+        json.push('"');
     }
     if let Some(f) = filename {
         json.push_str(",\"filename\":\"");
         json.push_str(&json_escape(f));
-        json.push_str("\"");
+        json.push('"');
     }
     if let Some(ct) = content_type {
         json.push_str(",\"contentType\":\"");
         json.push_str(&json_escape(ct));
-        json.push_str("\"");
+        json.push('"');
     }
     json.push('}');
     println!("{json}");
