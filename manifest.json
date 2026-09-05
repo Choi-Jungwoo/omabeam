@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "omabeam",
+  "name": "OmaBeam",
+  "version": "0.2.1",
+  "author": "Choi-Jungwoo",
+  "license": "MIT",
+  "homepage": "https://github.com/Choi-Jungwoo/omabeam",
+  "description": "Beam clipboard content or one file to your phone via QR code — click the bar icon to show the latest QR.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaBeam",
+    "description": "Beam clipboard via QR code — click to show panel",
+    "category": "Utilities",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
